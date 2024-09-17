@@ -12,6 +12,8 @@ interface BookListProps {
 
 export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookListProps) {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [isAddingBook, setIsAddingBook] = useState(false);
+  const [newBook, setNewBook] = useState<Omit<Book, 'id'>>({ title: '', shelfNumber: 1 });
 
   const handleEdit = (book: Book) => {
     setEditingBook(book);
@@ -42,12 +44,30 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
     }
   };
 
+  const handleAddBook = async (newBook: Book) => {
+    try {
+      const response = await axios.post('/api/books', newBook);
+      if (response.status === 201) {
+        setBooks([...books, response.data]);
+        setIsAddingBook(false);
+        setNewBook({ title: '', shelfNumber: 1 });
+      }
+    } catch (error) {
+      console.error('Error adding book:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`책 추가에 실패했습니다: ${error.response.data.message}`);
+      } else {
+        alert('책 추가에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      }
+    }
+  };
+
   return (
     <ul className="mt-4">
       {books.map((book) => (
         <li key={book.id} className="mb-2 p-2 border rounded bg-gray-100 text-black">
           {editingBook?.id === book.id ? (
-            <BookEditForm book={book} onSave={handleSave} />
+            <BookEditForm book={book} onSave={handleSave} onCancel={() => setEditingBook(null)} />
           ) : (
             <>
               <HighlightedText text={book.title} highlight={searchTerm} /> (책장 번호: {book.shelfNumber})
@@ -61,6 +81,27 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
           )}
         </li>
       ))}
+      {isAdmin && searchTerm && (
+        <li className="mb-2 p-2 border rounded bg-gray-100 text-black">
+          {isAddingBook ? (
+            <BookEditForm
+              book={{ id: 0, title: searchTerm, shelfNumber: 1 }}
+              onSave={handleAddBook}
+              onCancel={() => setIsAddingBook(false)}
+            />
+          ) : (
+            <>
+              <p>"{searchTerm}" 라는 제목의 책을 추가하시겠습니까?</p>
+              <button
+                onClick={() => setIsAddingBook(true)}
+                className="mt-2 bg-green-500 text-white px-2 py-1 rounded"
+              >
+                추가
+              </button>
+            </>
+          )}
+        </li>
+      )}
     </ul>
   );
 }
@@ -68,9 +109,10 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
 interface BookEditFormProps {
   book: Book;
   onSave: (updatedBook: Book) => void;
+  onCancel: () => void;
 }
 
-function BookEditForm({ book, onSave }: BookEditFormProps) {
+function BookEditForm({ book, onSave, onCancel }: BookEditFormProps) {
   const [editedBook, setEditedBook] = useState<Book>(book);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +139,8 @@ function BookEditForm({ book, onSave }: BookEditFormProps) {
         onChange={handleChange}
         className="w-full p-1 mb-2 border rounded"
       />
-      <button type="submit" className="bg-green-500 text-white px-2 py-1 rounded">저장</button>
+      <button type="submit" className="bg-green-500 text-white px-2 py-1 rounded mr-2">저장</button>
+      <button type="button" onClick={onCancel} className="bg-gray-500 text-white px-2 py-1 rounded">취소</button>
     </form>
   );
 }
