@@ -81,17 +81,17 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
           )}
         </li>
       ))}
-      {isAdmin && searchTerm && (
+      {isAdmin && searchTerm.trim() && (
         <li className="mb-2 p-2 border rounded bg-gray-100 text-black">
           {isAddingBook ? (
             <BookEditForm
-              book={{ id: 0, title: searchTerm, shelfNumber: 1 }}
+              book={{ id: 0, title: searchTerm.trim(), shelfNumber: 1 }}
               onSave={handleAddBook}
               onCancel={() => setIsAddingBook(false)}
             />
           ) : (
             <>
-              <p>"{searchTerm}" 라는 제목의 책을 추가하시겠습니까?</p>
+              <p>"{searchTerm.trim()}" 라는 제목의 책을 추가하시겠습니까?</p>
               <button
                 onClick={() => setIsAddingBook(true)}
                 className="mt-2 bg-green-500 text-white px-2 py-1 rounded"
