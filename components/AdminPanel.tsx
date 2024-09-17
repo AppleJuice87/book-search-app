@@ -12,7 +12,7 @@ export default function AdminPanel({ isAdmin, setIsAdmin }: AdminPanelProps) {
   const handleAdminLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // 실제 구현에서는 서버 측 인증을 사용해야 합니다.
-    if (password === 'admin123') {
+    if (password === '1234') {
       setIsAdmin(true);
       setPassword('');
     } else {

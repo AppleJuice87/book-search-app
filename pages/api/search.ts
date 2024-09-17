@@ -17,9 +17,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    const searchTerms = q.split('').join('%');
+    const searchTerms = q.toLowerCase().replace(/\s/g, '').split('').join('%');
     const [rows] = await connection.execute(
-      'SELECT * FROM books WHERE title LIKE ?',
+      'SELECT * FROM books WHERE LOWER(REPLACE(title, " ", "")) LIKE ?',
       [`%${searchTerms}%`]
     );
     res.status(200).json(rows);

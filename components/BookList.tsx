@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import React, { ChangeEvent } from 'react';
 import { Book } from '../types/book';
+import axios from 'axios';
 
 interface BookListProps {
   books: Book[];
+  setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
   isAdmin: boolean;
   searchTerm: string;
 }
 
-export default function BookList({ books, isAdmin, searchTerm }: BookListProps) {
+export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookListProps) {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
   const handleEdit = (book: Book) => {
@@ -20,10 +22,24 @@ export default function BookList({ books, isAdmin, searchTerm }: BookListProps) 
     console.log(`책 ID ${bookId} 삭제`);
   };
 
-  const handleSave = (updatedBook: Book) => {
-    // 저장 로직 구현
-    console.log('업데이트된 책:', updatedBook);
-    setEditingBook(null);
+  const handleSave = async (updatedBook: Book) => {
+    try {
+      const response = await axios.put(`/api/books/${updatedBook.id}`, updatedBook);
+      if (response.status === 200) {
+        const updatedBooks = books.map(book => 
+          book.id === updatedBook.id ? updatedBook : book
+        );
+        setBooks(updatedBooks);
+        setEditingBook(null);
+      }
+    } catch (error) {
+      console.error('Error updating book:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`책 정보 업데이트에 실패했습니다: ${error.response.data.message}`);
+      } else {
+        alert('책 정보 업데이트에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      }
+    }
   };
 
   return (
@@ -58,7 +74,8 @@ function BookEditForm({ book, onSave }: BookEditFormProps) {
   const [editedBook, setEditedBook] = useState<Book>(book);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEditedBook({ ...editedBook, [e.target.name]: e.target.value });
+    const value = e.target.name === 'shelfNumber' ? parseInt(e.target.value) : e.target.value;
+    setEditedBook({ ...editedBook, [e.target.name]: value });
   };
 
   return (

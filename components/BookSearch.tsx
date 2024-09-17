@@ -15,19 +15,7 @@ export default function BookSearch() {
       if (searchTerm.trim().length > 0) {
         try {
           const response = await axios.get(`/api/search?q=${searchTerm}`);
-          console.log('API response:', response.data);
-          const filteredBooks = response.data.filter((book: Book) => {
-            let bookTitle = book.title.toLowerCase().replace(/\s/g, '');
-            let searchTermLower = searchTerm.toLowerCase().replace(/\s/g, '');
-            let bookIndex = 0;
-            for (let char of searchTermLower) {
-              bookIndex = bookTitle.indexOf(char, bookIndex);
-              if (bookIndex === -1) return false;
-              bookIndex++;
-            }
-            return true;
-          });
-          setBooks(filteredBooks);
+          setBooks(response.data);
         } catch (error) {
           console.error('Error searching books:', error);
           setBooks([]);
@@ -51,7 +39,7 @@ export default function BookSearch() {
         placeholder="책 제목을 입력하세요"
         className="w-full p-2 border rounded text-black"
       />
-      <BookList books={books} isAdmin={isAdmin} searchTerm={searchTerm} />
+      <BookList books={books} setBooks={setBooks} isAdmin={isAdmin} searchTerm={searchTerm} />
       <AdminPanel isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
     </div>
   );
