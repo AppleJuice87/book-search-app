@@ -19,9 +19,21 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
     setEditingBook(book);
   };
 
-  const handleDelete = (bookId: number) => {
-    // 삭제 로직 구현
-    console.log(`책 ID ${bookId} 삭제`);
+  const handleDelete = async (bookId: number) => {
+    try {
+      const response = await axios.delete(`/api/books/${bookId}`);
+      if (response.status === 200) {
+        setBooks(books.filter(book => book.id !== bookId));
+        setEditingBook(null);
+      }
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`책 삭제에 실패했습니다: ${error.response.data.message}`);
+      } else {
+        alert('책 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      }
+    }
   };
 
   const handleSave = async (updatedBook: Book) => {
@@ -67,14 +79,13 @@ export default function BookList({ books, setBooks, isAdmin, searchTerm }: BookL
       {books.map((book) => (
         <li key={book.id} className="mb-2 p-2 border rounded bg-gray-100 text-black">
           {editingBook?.id === book.id ? (
-            <BookEditForm book={book} onSave={handleSave} onCancel={() => setEditingBook(null)} />
+            <BookEditForm book={book} onSave={handleSave} onCancel={() => setEditingBook(null)} onDelete={handleDelete} />
           ) : (
             <>
               <HighlightedText text={book.title} highlight={searchTerm} /> (책장 번호: {book.shelfNumber})
               {isAdmin && (
                 <div className="mt-2">
                   <button onClick={() => handleEdit(book)} className="mr-2 bg-blue-500 text-white px-2 py-1 rounded">수정</button>
-                  <button onClick={() => handleDelete(book.id)} className="bg-red-500 text-white px-2 py-1 rounded">삭제</button>
                 </div>
               )}
             </>
@@ -110,14 +121,28 @@ interface BookEditFormProps {
   book: Book;
   onSave: (updatedBook: Book) => void;
   onCancel: () => void;
+  onDelete?: (bookId: number) => void;
 }
 
-function BookEditForm({ book, onSave, onCancel }: BookEditFormProps) {
+function BookEditForm({ book, onSave, onCancel, onDelete }: BookEditFormProps) {
   const [editedBook, setEditedBook] = useState<Book>(book);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.name === 'shelfNumber' ? parseInt(e.target.value) : e.target.value;
     setEditedBook({ ...editedBook, [e.target.name]: value });
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleting(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete && onDelete(book.id);
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleting(false);
   };
 
   return (
@@ -139,8 +164,22 @@ function BookEditForm({ book, onSave, onCancel }: BookEditFormProps) {
         onChange={handleChange}
         className="w-full p-1 mb-2 border rounded"
       />
-      <button type="submit" className="bg-green-500 text-white px-2 py-1 rounded mr-2">저장</button>
-      <button type="button" onClick={onCancel} className="bg-gray-500 text-white px-2 py-1 rounded">취소</button>
+      <div className="flex justify-between">
+        <div>
+          <button type="submit" className="bg-green-500 text-white px-2 py-1 rounded mr-2">저장</button>
+          <button type="button" onClick={onCancel} className="bg-gray-500 text-white px-2 py-1 rounded">취소</button>
+        </div>
+        {onDelete && !isDeleting && (
+          <button type="button" onClick={handleDeleteClick} className="bg-red-500 text-white px-2 py-1 rounded">삭제</button>
+        )}
+      </div>
+      {isDeleting && (
+        <div className="mt-2">
+          <p>"{editedBook.title}" 항목을 삭제하시겠습니까?</p>
+          <button type="button" onClick={handleDeleteConfirm} className="bg-red-500 text-white px-2 py-1 rounded mr-2">확인</button>
+          <button type="button" onClick={handleDeleteCancel} className="bg-gray-500 text-white px-2 py-1 rounded">취소</button>
+        </div>
+      )}
     </form>
   );
 }
